@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>去月球 · 记忆之旅</title>
+    <style>
+        /* 全局样式 - 像素风复古感 */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #1a1e2c;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+        }
+        #game-wrapper {
+            background: #2a2f3f;
+            padding: 20px 20px 25px;
+            border-radius: 24px;
+            box-shadow: 0 12px 0 #0f111a, 0 8px 20px rgba(0,0,0,0.7);
+            border: 2px solid #4a5068;
+        }
+        #game-container {
+            background: #10131e;
+            border-radius: 16px;
+            padding: 16px;
+            width: 700px;
+            max-width: 90vw;
+            box-shadow: inset 0 0 20px #05070c;
+        }
+        /* 状态栏 - 显示当前场景和物品 */
+        #status-bar {
+            background: #222836;
+            color: #b7c9e2;
+            padding: 8px 14px;
+            border-radius: 40px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            border: 1px solid #3d455b;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+            box-shadow: inset 0 2px 3px #0b0d14;
+        }
+        #status-bar span {
+            background: #141a26;
+            padding: 2px 14px;
+            border-radius: 30px;
+            border: 1px solid #3d455b;
+        }
+        /* 主舞台 - 模拟2D场景 */
+        #scene {
+            background: #1c2333;
+            border-radius: 16px;
+            padding: 20px 20px 12px;
+            min-height: 260px;
+            border: 1px solid #38405a;
+            box-shadow: inset 0 0 30px #0a0d16;
+            display: flex;
+            flex-direction: column;
+        }
+        #scene-title {
+            color: #e8edf5;
+            font-size: 22px;
+            font-weight: bold;
+            text-shadow: 0 2px 0 #0b0e17;
+            letter-spacing: 1px;
+            border-bottom: 2px dashed #3d455b;
+            padding-bottom: 6px;
+            margin-bottom: 12px;
+        }
+        #scene-desc {
+            color: #b7c9e2;
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 80px;
+            background: #131824;
+            padding: 14px 18px;
+            border-radius: 14px;
+            border-left: 6px solid #6d82b0;
+            margin-bottom: 14px;
+            box-shadow: inset 0 2px 6px #070a10;
+        }
+        #scene-objects {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 8px 0 12px;
+        }
+        .obj-btn {
+            background: #2f3a52;
+            border: none;
+            color: #d3def5;
+            font-family: inherit;
+            font-size: 15px;
+            padding: 8px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #151b28, 0 2px 8px #05070c;
+            transition: 0.07s linear;
+            border: 1px solid #4f5a78;
+            letter-spacing: 0.3px;
+        }
+        .obj-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #151b28;
+        }
+        .obj-btn.collected {
+            opacity: 0.4;
+            filter: grayscale(0.8);
+            transform: scale(0.95);
+            pointer-events: none;
+            box-shadow: 0 2px 0 #151b28;
+        }
+        #action-area {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin: 6px 0 4px;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .primary-btn {
+            background: #4e6188;
+            border: none;
+            color: white;
+            font-family: inherit;
+            font-size: 17px;
+            font-weight: bold;
+            padding: 10px 28px;
+            border-radius: 60px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #293249, 0 3px 10px #0b0e17;
+            transition: 0.07s linear;
+            border: 1px solid #7b8eb6;
+            letter-spacing: 0.8px;
+            flex: 1;
+            min-width: 120px;
+        }
+        .primary-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 0px 0 #293249;
+        }
+        .primary-btn:disabled {
+            opacity: 0.4;
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #293249;
+            pointer-events: none;
+        }
+        #inventory {
+            background: #1a1f2e;
+            color: #b7c9e2;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 15px;
+            border: 1px solid #38405a;
+            min-width: 140px;
+            text-align: center;
+            box-shadow: inset 0 2px 5px #070a10;
+        }
+        #message-log {
+            margin-top: 16px;
+            background: #0f131e;
+            color: #8d9fc7;
+            padding: 8px 14px;
+            border-radius: 40px;
+            font-size: 14px;
+            border: 1px solid #2f3850;
+            min-height: 30px;
+            box-shadow: inset 0 2px 6px #05070c;
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+        .footer-note {
+            color: #5f6b89;
+            text-align: center;
+            margin-top: 12px;
+            font-size: 12px;
+            border-top: 1px solid #2f3850;
+            padding-top: 10px;
+        }
+        @media (max-width: 550px) {
+            #game-wrapper { padding: 10px; }
+            #scene-title { font-size: 18px; }
+            #scene-desc { font-size: 14px; padding: 10px 12px; }
+            .primary-btn { font-size: 14px; padding: 8px 16px; min-width: 80px; }
+        }
+    </style>
+</head>
+<body>
+<div id="game-wrapper">
+    <div id="game-container">
+        <!-- 状态栏 -->
+        <div id="status-bar">
+            <span>📍 <span id="scene-name-display">灯塔外</span></span>
+            <span>🎒 <span id="inventory-display">无</span></span>
+        </div>
+
+        <!-- 主场景 -->
+        <div id="scene">
+            <div id="scene-title" id="scene-title">🌙 去月球 · 记忆碎片</div>
+            <div id="scene-desc">两位博士来到约翰尼的记忆中，寻找“去月球”的起源...</div>
+            <div id="scene-objects"></div>
+            <div id="action-area">
+                <button class="primary-btn" id="action-btn">🔍 探索记忆</button>
+                <div id="inventory">🎒 背包: 无</div>
+            </div>
+        </div>
+
+        <!-- 消息日志 -->
+        <div id="message-log">💡 点击物品或探索来推进剧情</div>
+        <div class="footer-note">《去月球》· 记忆原型 · 在SPCK Editor中构建</div>
+    </div>
+</div>
+<script>
+    // ============================================================
+    //  《去月球》记忆探索原型 - 完整交互逻辑
+    //  包含：场景、物品收集、剧情推进、结局触发
+    // ============================================================
+
+    // ----- 游戏状态 -----
+    const state = {
+        currentScene: 'lighthouse',   // 场景ID
+        inventory: [],               // 已收集物品
+        flags: {
+            talkedToRiver: false,
+            foundDiary: false,
+            gaveRabbit: false,
+            endingTriggered: false
+        },
+        step: 0                     // 剧情步数 (用于对话变化)
+    };
+
+    // ----- 场景数据 -----
+    const scenes = {
+        // 初始场景：灯塔外
+        lighthouse: {
+            name: '灯塔外',
+            desc: '夜色笼罩着灯塔，海浪拍打悬崖。你看到远处有一个身影——那是年轻的 River，她正抱着一只鸭嘴兽玩偶，似乎在等待什么。',
+            objects: [
+                { id: 'rabbit', label: '🐰 纸折兔子', desc: '一只褪色的纸兔子，放在灯塔台阶上。' },
+                { id: 'duck', label: '🦆 鸭嘴兽玩偶', desc: 'River 怀里的鸭嘴兽玩偶，看起来旧旧的但很干净。' }
+            ],
+            onEnter: () => {
+                if (!state.flags.talkedToRiver) {
+                    setMessage('River 轻声说："你也是来看月亮的吗？"');
+                } else if (!state.flags.gaveRabbit && state.inventory.includes('rabbit')) {
+                    setMessage('River 看着你手中的纸兔子，眼睛亮了一下。');
+                } else {
+                    setMessage('海浪声阵阵，灯塔的光划破夜空。');
+                }
+            }
+        },
+        // 回忆场景：River 的病床边
+        hospital: {
+            name: '医院 · 回忆',
+            desc: '消毒水的气味弥漫在空气中。River 躺在病床上，脸色苍白但依然带着微笑。她手中握着一只纸折的兔子。',
+            objects: [
+                { id: 'diary', label: '📖 泛黄的日记', desc: 'River 的日记本，里面夹着一片四叶草。' },
+                { id: 'photo', label: '🖼️ 旧照片', desc: '约翰尼和 River 在灯塔前的合影，背面写着一行小字。' }
+            ],
+            onEnter: () => {
+                if (!state.flags.foundDiary) {
+                    setMessage('River 虚弱地说："约翰尼……他总说想去月球。可我知道，他只是想找回那个约定。"');
+                } else {
+                    setMessage('River 看着窗外："月亮一直都在那里，只是我们有时会忘记抬头。"');
+                }
+            }
+        },
+        // 最终场景：月球
+        moon: {
+            name: '🌕 月球',
+            desc: '寂静的月球表面，地球在远处缓缓转动。你看到约翰尼和 River 并肩坐在一块岩石上，他们终于一起来到了这里。',
+            objects: [],
+            onEnter: () => {
+                setMessage('✨ "如果我们都迷路了，那就在月亮上见吧。" —— 记忆在此刻圆满。');
+                document.getElementById('action-btn').disabled = true;
+                state.flags.endingTriggered = true;
+            }
+        }
+    };
+
+    // ----- DOM 引用 -----
+    const sceneTitleEl = document.getElementById('scene-title');
+    const sceneDescEl = document.getElementById('scene-desc');
+    const sceneObjectsEl = document.getElementById('scene-objects');
+    const actionBtn = document.getElementById('action-btn');
+    const inventoryDisplay = document.getElementById('inventory-display');
+    const sceneNameDisplay = document.getElementById('scene-name-display');
+    const messageLog = document.getElementById('message-log');
+
+    // ----- 辅助函数 -----
+    function setMessage(msg) {
+        messageLog.textContent = msg;
+    }
+
+    function updateInventoryUI() {
+        const inv = state.inventory;
+        if (inv.length === 0) {
+            inventoryDisplay.textContent = '无';
+        } else {
+            inventoryDisplay.textContent = inv.map(id => {
+                // 查找物品标签
+                for (let sceneKey in scenes) {
+                    const objs = scenes[sceneKey].objects || [];
+                    const found = objs.find(o => o.id === id);
+                    if (found) return found.label;
+                }
+                return id;
+            }).join(' ');
+        }
+    }
+
+    function updateSceneUI() {
+        const scene = scenes[state.currentScene];
+        if (!scene) return;
+
+        // 更新标题和描述
+        sceneTitleEl.textContent = `🌙 ${scene.name}`;
+        sceneDescEl.textContent = scene.desc;
+        sceneNameDisplay.textContent = scene.name;
+
+        // 更新可交互物品
+        sceneObjectsEl.innerHTML = '';
+        if (scene.objects && scene.objects.length > 0) {
+            scene.objects.forEach(obj => {
+                const btn = document.createElement('button');
+                btn.className = 'obj-btn';
+                if (state.inventory.includes(obj.id)) {
+                    btn.classList.add('collected');
+                }
+                btn.textContent = obj.label;
+                btn.title = obj.desc;
+                btn.addEventListener('click', () => {
+                    handleObjectClick(obj.id);
+                });
+                sceneObjectsEl.appendChild(btn);
+            });
+        }
+
+        // 更新场景进入事件
+        if (scene.onEnter) {
+            scene.onEnter();
+        }
+
+        updateInventoryUI();
+    }
+
+    // ----- 物品交互 -----
+    function handleObjectClick(objId) {
+        if (state.inventory.includes(objId)) {
+            setMessage(`你已经收集了这件物品。`);
+            return;
+        }
+
+        // 收集物品
+        state.inventory.push(objId);
+        setMessage(`📦 你拾取了物品。`);
+        updateSceneUI();
+
+        // 特殊逻辑：收集兔子后触发对话变化
+        if (objId === 'rabbit') {
+            state.flags.gaveRabbit = true;
+            setMessage('你拿起纸兔子，它似乎在月光下微微发光……');
+        }
+        if (objId === 'diary') {
+            state.flags.foundDiary = true;
+            setMessage('日记里写着："如果我们都迷路了，那就在月亮上见吧。"');
+        }
+        // 如果收集了兔子和日记，解锁月球场景
+        if (state.inventory.includes('rabbit') && state.inventory.includes('diary')) {
+            // 但需要先触发对话
+        }
+    }
+
+    // ----- 主要行动: 探索记忆(推进剧情) -----
+    function handleAction() {
+        if (state.flags.endingTriggered) {
+            setMessage('🌟 故事已经完成，感谢你陪伴这段记忆。');
+            return;
+        }
+
+        const current = state.currentScene;
+
+        // 场景切换逻辑 (线性剧情)
+        if (current === 'lighthouse') {
+            // 如果已经和River对话过，并且收集了兔子，则进入医院
+            if (state.flags.talkedToRiver && state.inventory.includes('rabbit')) {
+                state.currentScene = 'hospital';
+                setMessage('你顺着记忆的碎片，来到了 River 的病床前……');
+                updateSceneUI();
+                return;
+            } else if (!state.flags.talkedToRiver) {
+                // 首次探索：与River对话
+                state.flags.talkedToRiver = true;
+                setMessage('River 告诉你："约翰尼答应过我，有一天我们会一起去月球。他从来没有忘记。"');
+                // 更新场景描述（让玩家知道可以收集兔子了）
+                const scene = scenes['lighthouse'];
+                scene.desc = 'River 的身影渐渐模糊，但灯塔台阶上的纸兔子还在。你走过去，俯身拾起它。';
+                updateSceneUI();
+                return;
+            } else {
+                // 已经对话过但没收集兔子
+                setMessage('你还需要拿起那只纸兔子，才能继续深入记忆。');
+                return;
+            }
+        }
+
+        if (current === 'hospital') {
+            // 如果收集了日记，并且已经见过照片，进入月球
+            if (state.inventory.includes('diary') && state.inventory.includes('photo')) {
+                state.currentScene = 'moon';
+                setMessage('🌕 所有的碎片终于拼合在一起。你来到了月球……');
+                updateSceneUI();
+                return;
+            } else if (state.inventory.includes('diary') && !state.inventory.includes('photo')) {
+                setMessage('你找到了日记，但似乎还有一件重要的物品——那张旧照片。');
+                return;
+            } else {
+                setMessage('你还需要在房间里多找找，也许 River 的日记能告诉你更多。');
+                return;
+            }
+        }
+
+        if (current === 'moon') {
+            setMessage('🌌 你已经在月球了，故事已经完成。');
+        }
+    }
+
+    // ----- 初始化游戏 -----
+    function initGame() {
+        // 设置初始场景
+        state.currentScene = 'lighthouse';
+        state.inventory = [];
+        state.flags = {
+            talkedToRiver: false,
+            foundDiary: false,
+            gaveRabbit: false,
+            endingTriggered: false
+        };
+        // 确保医院场景的物品包含photo
+        if (!scenes.hospital.objects.find(o => o.id === 'photo')) {
+            scenes.hospital.objects.push({ id: 'photo', label: '🖼️ 旧照片', desc: '约翰尼和 River 在灯塔前的合影。' });
+        }
+        // 绑定按钮事件
+        actionBtn.addEventListener('click', handleAction);
+        // 渲染
+        updateSceneUI();
+        setMessage('🌙 欢迎来到《去月球》的记忆世界。探索场景，收集物品，拼凑出故事的真相。');
+    }
+
+    // 页面加载后启动
+    window.onload = initGame;
+</script>
+</body>
+</html>
